@@ -1,0 +1,108 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BASE_ADDR_I2C	i2c/PCIE_i2c_r.c	9;"	d	file:
+BASE_ADDR_I2C	i2c/PCIE_i2c_w.c	9;"	d	file:
+BASE_ADDR_PWM	pwm/PCIE_pwm.c	9;"	d	file:
+BASE_ADDR_UART	uart/PCIE_uart.c	8;"	d	file:
+BAUD	uart/PCIE_uart.c	11;"	d	file:
+I2C_CTRL_AA	i2c/PCIE_i2c_r.c	28;"	d	file:
+I2C_CTRL_AA	i2c/PCIE_i2c_w.c	28;"	d	file:
+I2C_CTRL_CR0	i2c/PCIE_i2c_r.c	30;"	d	file:
+I2C_CTRL_CR0	i2c/PCIE_i2c_w.c	30;"	d	file:
+I2C_CTRL_CR1	i2c/PCIE_i2c_r.c	29;"	d	file:
+I2C_CTRL_CR1	i2c/PCIE_i2c_w.c	29;"	d	file:
+I2C_CTRL_CR2	i2c/PCIE_i2c_r.c	23;"	d	file:
+I2C_CTRL_CR2	i2c/PCIE_i2c_w.c	23;"	d	file:
+I2C_CTRL_ENS1	i2c/PCIE_i2c_r.c	24;"	d	file:
+I2C_CTRL_ENS1	i2c/PCIE_i2c_w.c	24;"	d	file:
+I2C_CTRL_REG	i2c/PCIE_i2c_r.c	18;"	d	file:
+I2C_CTRL_REG	i2c/PCIE_i2c_w.c	18;"	d	file:
+I2C_CTRL_SI	i2c/PCIE_i2c_r.c	27;"	d	file:
+I2C_CTRL_SI	i2c/PCIE_i2c_w.c	27;"	d	file:
+I2C_CTRL_STA	i2c/PCIE_i2c_r.c	25;"	d	file:
+I2C_CTRL_STA	i2c/PCIE_i2c_w.c	25;"	d	file:
+I2C_CTRL_STO	i2c/PCIE_i2c_r.c	26;"	d	file:
+I2C_CTRL_STO	i2c/PCIE_i2c_w.c	26;"	d	file:
+I2C_DATA_REG	i2c/PCIE_i2c_r.c	20;"	d	file:
+I2C_DATA_REG	i2c/PCIE_i2c_w.c	20;"	d	file:
+I2C_STATUS_DATA_RECEIVED_ACK	i2c/PCIE_i2c_r.c	38;"	d	file:
+I2C_STATUS_DATA_RECEIVED_ACK	i2c/PCIE_i2c_w.c	38;"	d	file:
+I2C_STATUS_DATA_RECEIVED_NACK	i2c/PCIE_i2c_r.c	39;"	d	file:
+I2C_STATUS_DATA_RECEIVED_NACK	i2c/PCIE_i2c_w.c	39;"	d	file:
+I2C_STATUS_DATA_TRANSMITTED_ACK	i2c/PCIE_i2c_r.c	36;"	d	file:
+I2C_STATUS_DATA_TRANSMITTED_ACK	i2c/PCIE_i2c_w.c	36;"	d	file:
+I2C_STATUS_REPEATED_START_TRANSMITTED	i2c/PCIE_i2c_r.c	34;"	d	file:
+I2C_STATUS_REPEATED_START_TRANSMITTED	i2c/PCIE_i2c_w.c	34;"	d	file:
+I2C_STATUS_SLA_R_ACK	i2c/PCIE_i2c_r.c	37;"	d	file:
+I2C_STATUS_SLA_R_ACK	i2c/PCIE_i2c_w.c	37;"	d	file:
+I2C_STATUS_SLA_W_ACK	i2c/PCIE_i2c_r.c	35;"	d	file:
+I2C_STATUS_SLA_W_ACK	i2c/PCIE_i2c_w.c	35;"	d	file:
+I2C_STATUS_START_TRANSMITTED	i2c/PCIE_i2c_r.c	33;"	d	file:
+I2C_STATUS_START_TRANSMITTED	i2c/PCIE_i2c_w.c	33;"	d	file:
+I2C_STATUS_STOP_TRANSMITTED	i2c/PCIE_i2c_r.c	40;"	d	file:
+I2C_STATUS_STOP_TRANSMITTED	i2c/PCIE_i2c_w.c	40;"	d	file:
+I2C_STAT_REG	i2c/PCIE_i2c_r.c	19;"	d	file:
+I2C_STAT_REG	i2c/PCIE_i2c_w.c	19;"	d	file:
+MAP_MASK	app.c	10;"	d	file:
+MAP_MASK	i2c/PCIE_i2c_r.c	12;"	d	file:
+MAP_MASK	i2c/PCIE_i2c_w.c	12;"	d	file:
+MAP_MASK	uart/PCIE_uart.c	12;"	d	file:
+MAP_SIZE	app.c	9;"	d	file:
+MAP_SIZE	i2c/PCIE_i2c_r.c	11;"	d	file:
+MAP_SIZE	i2c/PCIE_i2c_w.c	11;"	d	file:
+MAP_SIZE	pwm/PCIE_pwm.c	8;"	d	file:
+MAP_SIZE	uart/PCIE_uart.c	10;"	d	file:
+REG_PERIOD	pwm/PCIE_pwm.c	13;"	d	file:
+REG_PRESCALE	pwm/PCIE_pwm.c	12;"	d	file:
+REG_PWM1_NEGEDGE	pwm/PCIE_pwm.c	16;"	d	file:
+REG_PWM1_POSEDGE	pwm/PCIE_pwm.c	15;"	d	file:
+REG_PWM_ENABLE	pwm/PCIE_pwm.c	14;"	d	file:
+REG_SYNC_UPDATE	pwm/PCIE_pwm.c	17;"	d	file:
+SLAVE_ADDR	i2c/PCIE_i2c_r.c	14;"	d	file:
+SLAVE_ADDR	i2c/PCIE_i2c_w.c	14;"	d	file:
+SLAVE_REG_ADDR	i2c/PCIE_i2c_r.c	15;"	d	file:
+SLAVE_REG_ADDR	i2c/PCIE_i2c_w.c	15;"	d	file:
+SYS_CLK	uart/PCIE_uart.c	13;"	d	file:
+devmemInit	app.c	/^void *devmemInit(uint64_t regBase) {$/;"	f
+devmemInit	i2c/PCIE_i2c_r.c	/^void *devmemInit(uint64_t regBase) {$/;"	f
+devmemInit	i2c/PCIE_i2c_w.c	/^void *devmemInit(uint64_t regBase) {$/;"	f
+devmemInit	uart/PCIE_uart.c	/^volatile uint8_t *devmemInit(uint64_t regBase)$/;"	f
+i2c_base	i2c/PCIE_i2c_r.c	/^static uint8_t *i2c_base = NULL;$/;"	v	file:
+i2c_base	i2c/PCIE_i2c_w.c	/^static uint8_t *i2c_base = NULL;$/;"	v	file:
+i2c_clear_bits_debug	i2c/PCIE_i2c_r.c	/^static void i2c_clear_bits_debug(uint8_t bits, const char *info) {$/;"	f	file:
+i2c_clear_bits_debug	i2c/PCIE_i2c_w.c	/^static void i2c_clear_bits_debug(uint8_t bits, const char *info) {$/;"	f	file:
+i2c_get_ctrl	i2c/PCIE_i2c_r.c	/^static uint8_t i2c_get_ctrl(void) {$/;"	f	file:
+i2c_get_ctrl	i2c/PCIE_i2c_w.c	/^static uint8_t i2c_get_ctrl(void) {$/;"	f	file:
+i2c_get_data	i2c/PCIE_i2c_r.c	/^static uint8_t i2c_get_data(void) {$/;"	f	file:
+i2c_get_data	i2c/PCIE_i2c_w.c	/^static uint8_t i2c_get_data(void) {$/;"	f	file:
+i2c_get_reg	i2c/PCIE_i2c_r.c	/^static uint8_t i2c_get_reg(uint8_t offset) {$/;"	f	file:
+i2c_get_reg	i2c/PCIE_i2c_w.c	/^static uint8_t i2c_get_reg(uint8_t offset) {$/;"	f	file:
+i2c_get_status	i2c/PCIE_i2c_r.c	/^static uint8_t i2c_get_status(void) {$/;"	f	file:
+i2c_get_status	i2c/PCIE_i2c_w.c	/^static uint8_t i2c_get_status(void) {$/;"	f	file:
+i2c_init	i2c/PCIE_i2c_r.c	/^void i2c_init(void) {$/;"	f
+i2c_init	i2c/PCIE_i2c_w.c	/^void i2c_init(void) {$/;"	f
+i2c_master_read_byte	i2c/PCIE_i2c_r.c	/^int i2c_master_read_byte(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data) {$/;"	f
+i2c_master_write_byte	i2c/PCIE_i2c_r.c	/^int i2c_master_write_byte(uint8_t dev_addr, uint8_t reg_addr, uint8_t data) {$/;"	f
+i2c_master_write_byte	i2c/PCIE_i2c_w.c	/^int i2c_master_write_byte(uint8_t dev_addr, uint8_t reg_addr, uint8_t data) {$/;"	f
+i2c_set_bits_debug	i2c/PCIE_i2c_r.c	/^static void i2c_set_bits_debug(uint8_t bits, const char *info) {$/;"	f	file:
+i2c_set_bits_debug	i2c/PCIE_i2c_w.c	/^static void i2c_set_bits_debug(uint8_t bits, const char *info) {$/;"	f	file:
+i2c_set_ctrl	i2c/PCIE_i2c_r.c	/^static void i2c_set_ctrl(uint8_t val) {$/;"	f	file:
+i2c_set_ctrl	i2c/PCIE_i2c_w.c	/^static void i2c_set_ctrl(uint8_t val) {$/;"	f	file:
+i2c_set_data	i2c/PCIE_i2c_r.c	/^static void i2c_set_data(uint8_t val) {$/;"	f	file:
+i2c_set_data	i2c/PCIE_i2c_w.c	/^static void i2c_set_data(uint8_t val) {$/;"	f	file:
+i2c_set_reg	i2c/PCIE_i2c_r.c	/^static void i2c_set_reg(uint8_t offset, uint8_t val) {$/;"	f	file:
+i2c_set_reg	i2c/PCIE_i2c_w.c	/^static void i2c_set_reg(uint8_t offset, uint8_t val) {$/;"	f	file:
+i2c_wait_si_debug	i2c/PCIE_i2c_r.c	/^static int i2c_wait_si_debug(const char *step) {$/;"	f	file:
+i2c_wait_si_debug	i2c/PCIE_i2c_w.c	/^static int i2c_wait_si_debug(const char *step) {$/;"	f	file:
+main	app.c	/^int main(int argc, char *argv[]) {$/;"	f
+main	i2c/PCIE_i2c_r.c	/^int main(int argc, char *argv[]) {$/;"	f
+main	i2c/PCIE_i2c_w.c	/^int main(int argc, char *argv[]) {$/;"	f
+main	pwm/PCIE_pwm.c	/^int main(int argc, char *argv[]) {$/;"	f
+main	uart/PCIE_uart.c	/^int main(int argc, char *argv[]) {$/;"	f
+uart_init	uart/PCIE_uart.c	/^void uart_init(volatile uint8_t *base_addr, int baud_rate){$/;"	f
+uart_read	uart/PCIE_uart.c	/^int uart_read(volatile uint8_t *status_addr, volatile uint8_t *read_addr, uint8_t *data) {$/;"	f
+uart_write	uart/PCIE_uart.c	/^int uart_write(volatile uint8_t *status_addr, volatile uint8_t *write_addr, uint8_t data) {$/;"	f

@@ -95,23 +95,40 @@ int ipmb_func(unsigned char **sendBuf, int *sendBufLen, int num)//num : cai
     usleep(5000);
 #endif
     //==============发送E3请求===================
-    int getE3Len = 6 + 16 * num + 1 ;
+    // int getE3Len = 6 + 16 * num + 1 ;
+    int getE3Len = 6+ 1;
     LOG("==================E3====================");
     memset(readBuf, 0x0, sizeof(readBuf));
+    unsigned char *p = readBuf;
     ret = i2cIPMB_Write(CHMC_ADDR, sizeof(IpmbGCBuf), IpmbGCBuf);
+    LOG("ret=%d", ret);
+    if(ret < 0)
+    {
+        LOG("i2cIPMB_Write error");
+        return -1;
+    }
+    usleep(60000);
+
+
+    ret =  i2cIPMB_Read(CHMC_ADDR, getE3Len, p);
     LOG("ret=%d", ret);
     if(ret < 0)
     {
         LOG("");
         return -1;
     }
-    usleep(60000);
-    ret =  i2cIPMB_Read(CHMC_ADDR, getE3Len, readBuf);
-    LOG("ret=%d", ret);
-    if(ret < 0)
+    p+= getE3Len;
+    for(int i=0;i<num;i++)
     {
-        LOG("");
-        return -1;
+        ret =  i2cIPMB_Read(CHMC_ADDR, 16, p);
+        LOG("ret=%d", ret);
+        if(ret < 0)
+        {
+            LOG("---->");
+            return -1;
+        }
+        p+=16;
+        usleep(1000);
     }
     // i2cIPMB_Read(CHMC_ADDR, 160, readBuf1);
 
@@ -119,7 +136,7 @@ int ipmb_func(unsigned char **sendBuf, int *sendBufLen, int num)//num : cai
     int n = ipmb_swap_uint16(tmpRecvE3->dataLen) / 16;
     LOG("n:%d,tmpRecvE3->dataLen:%d", n, ipmb_swap_uint16(tmpRecvE3->dataLen));
     LOG("\n\r****getE3Len print*****\n\r");
-    print_data((char *)readBuf, getE3Len);
+    print_data((char *)readBuf, ipmb_swap_uint16(tmpRecvE3->dataLen) + 7);
     // print_data((char *)readBuf1, 160);
     // for (int cnt = 2; cnt < getE3Len - 1; cnt++)
     // {
