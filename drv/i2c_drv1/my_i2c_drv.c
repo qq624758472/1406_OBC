@@ -47,7 +47,8 @@
 #define I2C_WRITE_BYTE _IOW(I2C_IOCTL_MAGIC, 1, struct i2c_data)
 #define I2C_READ_BYTE _IOWR(I2C_IOCTL_MAGIC, 2, struct i2c_data)
 #define I2C_READ_TWO_BYTES _IOWR(I2C_IOCTL_MAGIC, 3, struct i2c_two_bytes)
-#define I2C_READ_BYTES _IOWR(I2C_IOCTL_MAGIC, 4, struct i2c_two_bytes)
+#define I2C_READ_BYTES _IOWR(I2C_IOCTL_MAGIC, 4, struct i2c_data)
+#define I2C_WRITE_BYTES _IOW(I2C_IOCTL_MAGIC, 5, struct i2c_data)
 
 // 数据结构定义
 struct i2c_data
@@ -147,6 +148,7 @@ static void i2c_init_controller(int channel)
     mutex_unlock(&i2c_dev->lock);
 }
 
+#if 0
 // I2C写一个字节
 static int i2c_master_write_byte(int channel, uint8_t dev_addr, uint8_t reg_addr, uint8_t data)
 {
@@ -249,7 +251,114 @@ out:
     mutex_unlock(&i2c_dev->lock);
     return ret;
 }
+#endif
+// I2C写入任意长度字节
+static int i2c_master_write_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr,
+                                  const uint8_t *data_buf, uint32_t len)
+{
+    int ret;
+    uint32_t i;
 
+    // 参数合法性检查
+    if (!data_buf || len == 0)
+        return -EINVAL;
+
+    mutex_lock(&i2c_dev->lock);
+
+    // 第一步：发送START条件
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_STA);
+    ret = i2c_wait_si(channel, "Write start condition");
+    if (ret < 0)
+        goto out;
+
+    // 第二步：发送设备地址(写模式)
+    i2c_set_data(channel, dev_addr << 1);
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~(I2C_CTRL_STA | I2C_CTRL_SI));
+    ret = i2c_wait_si(channel, "Send device address (write mode)");
+    if (ret < 0)
+        goto out;
+
+    if (i2c_get_status(channel) != I2C_STATUS_SLA_W_ACK)
+    {
+        printk("[ERROR] [SLA+W STATUS] STATUS=0x%02X\n", i2c_get_status(channel));
+        ret = -EIO;
+        goto out;
+    }
+
+    // 第三步：发送寄存器地址
+    i2c_set_data(channel, reg_addr);
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+    ret = i2c_wait_si(channel, "Write register address");
+    if (ret < 0)
+        goto out;
+
+    if (i2c_get_status(channel) != I2C_STATUS_DATA_TRANSMITTED_ACK)
+    {
+        dev_err(i2c_dev->device, "Register address not acknowledged (0x%02X)\n",
+                i2c_get_status(channel));
+        ret = -EIO;
+        printk("i2c set reg error\n");
+        goto out;
+    }
+
+    // 第四步：循环发送多个字节数据
+    for (i = 0; i < len; i++)
+    {
+        // 设置要发送的数据
+        i2c_set_data(channel, data_buf[i]);
+        // 清除SI标志，继续传输
+        i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+
+        // 等待传输完成
+        ret = i2c_wait_si(channel, "Write data byte");
+        if (ret < 0)
+            goto out;
+
+        // 检查传输状态
+        if (i2c_get_status(channel) != I2C_STATUS_DATA_TRANSMITTED_ACK)
+        {
+            dev_err(i2c_dev->device, "Data byte %d not acknowledged (0x%02X)\n",
+                    i, i2c_get_status(channel));
+            ret = -EIO;
+            printk("i2c send data %d error\n", i);
+            goto out;
+        }
+    }
+    printk("send %d bytes data success\n", len);
+
+    // 第五步：发送STOP条件
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_STO);
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+
+    ret = i2c_wait_si(channel, "Wait for stop condition");
+    if (ret < 0)
+        goto out;
+
+    // 等待STOP完成
+    ret = 1000;
+    while (--ret > 0)
+    {
+        if (i2c_get_status(channel) == I2C_STATUS_STOP_TRANSMITTED)
+            break;
+        usleep_range(10, 20);
+    }
+
+    if (ret <= 0)
+    {
+        dev_warn(i2c_dev->device, "Timeout waiting for STOP\n");
+    }
+
+    // 清除SI信号，为下一次操作做准备
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+
+    ret = 0; // 全部成功
+
+out:
+    mutex_unlock(&i2c_dev->lock);
+    return ret;
+};
+
+#if 0
 // I2C读一个字节
 static int i2c_master_read_byte(int channel, uint8_t dev_addr, uint8_t reg_addr, uint8_t *data)
 {
@@ -392,6 +501,8 @@ out:
     return ret;
 }
 
+#endif
+#if 0
 // I2C读两个字节
 static int i2c_master_read_two_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr,
                                      uint8_t *data1, uint8_t *data2)
@@ -533,6 +644,7 @@ out:
     return ret;
 }
 
+#endif
 // I2C读取任意长度字节
 static int i2c_master_read_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr,
                                  uint8_t *data_buf, uint32_t len)
@@ -708,8 +820,8 @@ static long i2c_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
     int ret = 0;
     int channel;
-    struct i2c_data data;
-    struct i2c_two_bytes two_bytes;
+    // struct i2c_data data;
+    // struct i2c_two_bytes two_bytes;
 
     // 检查命令合法性
     if (_IOC_TYPE(cmd) != I2C_IOCTL_MAGIC)
@@ -728,7 +840,7 @@ static long i2c_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
         i2c_dev->current_channel = channel;
         break;
-
+#if 0
     case I2C_WRITE_BYTE:
         if (copy_from_user(&data, (struct i2c_data __user *)arg, sizeof(data)))
             return -EFAULT;
@@ -746,6 +858,59 @@ static long i2c_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         if (ret == 0 && copy_to_user((struct i2c_data __user *)arg, &data, sizeof(data)))
             ret = -EFAULT;
         break;
+#endif
+    case I2C_WRITE_BYTES:
+    {
+        struct i2c_data user_data;
+        uint8_t *kernel_buf = NULL;
+
+        // 1. 从用户空间获取参数
+        if (copy_from_user(&user_data, (struct i2c_data __user *)arg, sizeof(user_data)))
+        {
+            ret = -EFAULT;
+            break;
+        }
+
+        // 2. 参数合法性检查
+        if (user_data.len == 0 || !user_data.data)
+        {
+            ret = -EINVAL; // 长度为0或缓冲区为空指针
+            break;
+        }
+        if (user_data.len > 1024) // 限制最大写入长度
+        {
+            ret = -E2BIG;
+            break;
+        }
+
+        // 3. 分配内核临时缓冲区
+        kernel_buf = kmalloc(user_data.len, GFP_KERNEL);
+        if (!kernel_buf)
+        {
+            ret = -ENOMEM;
+            break;
+        }
+
+        // 4. 从用户空间复制待写入的数据到内核缓冲区
+        if (copy_from_user(kernel_buf, user_data.data, user_data.len))
+        {
+            ret = -EFAULT;
+            kfree(kernel_buf);
+            break;
+        }
+
+        // 5. 调用多字节写入函数
+        ret = i2c_master_write_bytes(
+            i2c_dev->current_channel,
+            user_data.dev_addr,
+            user_data.reg_addr,
+            kernel_buf,
+            user_data.len);
+
+        // 6. 释放内核缓冲区
+        kfree(kernel_buf);
+        break;
+    }
     case I2C_READ_BYTES:
     {
         struct i2c_data user_data;
@@ -801,16 +966,16 @@ static long i2c_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         kfree(kernel_buf);
         break;
     }
-    case I2C_READ_TWO_BYTES:
-        if (copy_from_user(&two_bytes, (struct i2c_two_bytes __user *)arg, sizeof(two_bytes)))
-            return -EFAULT;
+    // case I2C_READ_TWO_BYTES:
+    //     if (copy_from_user(&two_bytes, (struct i2c_two_bytes __user *)arg, sizeof(two_bytes)))
+    //         return -EFAULT;
 
-        ret = i2c_master_read_two_bytes(i2c_dev->current_channel,
-                                        two_bytes.dev_addr, two_bytes.reg_addr,
-                                        &two_bytes.data1, &two_bytes.data2);
-        if (ret == 0 && copy_to_user((struct i2c_two_bytes __user *)arg, &two_bytes, sizeof(two_bytes)))
-            ret = -EFAULT;
-        break;
+    //     ret = i2c_master_read_two_bytes(i2c_dev->current_channel,
+    //                                     two_bytes.dev_addr, two_bytes.reg_addr,
+    //                                     &two_bytes.data1, &two_bytes.data2);
+    //     if (ret == 0 && copy_to_user((struct i2c_two_bytes __user *)arg, &two_bytes, sizeof(two_bytes)))
+    //         ret = -EFAULT;
+    //     break;
 
     default:
         ret = -ENOTTY;
