@@ -1,1 +1,17 @@
 drv/i2cControl
+drv/my_i2c_drv.mod
+drv/i2c_drv1/.Module.symvers.cmd
+drv/i2c_drv1/.modules.order.cmd
+drv/i2c_drv1/.my_i2c_drv.ko.cmd
+drv/i2c_drv1/.my_i2c_drv.mod.cmd
+drv/i2c_drv1/.my_i2c_drv.mod.o.cmd
+drv/i2c_drv1/.my_i2c_drv.o.cmd
+drv/i2c_drv1/.Module.symvers.cmd
+drv/i2c_drv1/Module.symvers
+drv/i2c_drv1/modules.order
+drv/i2c_drv1/my_i2c_drv copy.c
+drv/i2c_drv1/my_i2c_drv.ko
+drv/i2c_drv1/my_i2c_drv.mod
+drv/i2c_drv1/my_i2c_drv.mod.c
+drv/i2c_drv1/my_i2c_drv.mod.o
+drv/i2c_drv1/my_i2c_drv.o
