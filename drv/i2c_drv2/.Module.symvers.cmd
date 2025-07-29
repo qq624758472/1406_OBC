@@ -1,0 +1,1 @@
+cmd_/home/ucas/1406/1406_OBC/drv/i2c_drv2/Module.symvers := sed 's/\.ko$$/\.o/' /home/ucas/1406/1406_OBC/drv/i2c_drv2/modules.order | scripts/mod/modpost    -o /home/ucas/1406/1406_OBC/drv/i2c_drv2/Module.symvers -e -i Module.symvers   -T -

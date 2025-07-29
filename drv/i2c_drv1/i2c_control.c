@@ -29,7 +29,7 @@ struct i2c_two_bytes
 #define I2C_WRITE_BYTE _IOW(I2C_IOCTL_MAGIC, 1, struct i2c_data)
 #define I2C_READ_BYTE _IOWR(I2C_IOCTL_MAGIC, 2, struct i2c_data)
 #define I2C_READ_TWO_BYTES _IOWR(I2C_IOCTL_MAGIC, 3, struct i2c_two_bytes)
-
+#define I2C_READ_BYTES _IOWR(I2C_IOCTL_MAGIC, 4, struct i2c_two_bytes)
 // 设备节点路径
 #define I2C_DEVICE "/dev/i2c_controller"
 

@@ -47,13 +47,15 @@
 #define I2C_WRITE_BYTE _IOW(I2C_IOCTL_MAGIC, 1, struct i2c_data)
 #define I2C_READ_BYTE _IOWR(I2C_IOCTL_MAGIC, 2, struct i2c_data)
 #define I2C_READ_TWO_BYTES _IOWR(I2C_IOCTL_MAGIC, 3, struct i2c_two_bytes)
+#define I2C_READ_BYTES _IOWR(I2C_IOCTL_MAGIC, 4, struct i2c_two_bytes)
 
 // 数据结构定义
 struct i2c_data
 {
     uint8_t dev_addr;
     uint8_t reg_addr;
-    uint8_t data;
+    uint32_t len;
+    uint8_t *data;
 };
 
 struct i2c_two_bytes
@@ -134,7 +136,7 @@ static int i2c_wait_si(int channel, const char *step)
 // I2C初始化函数
 static void i2c_init_controller(int channel)
 {
-//    unsigned long flags;
+    //    unsigned long flags;
     mutex_lock(&i2c_dev->lock);
 
     // 重置控制寄存器
@@ -148,7 +150,7 @@ static void i2c_init_controller(int channel)
 // I2C写一个字节
 static int i2c_master_write_byte(int channel, uint8_t dev_addr, uint8_t reg_addr, uint8_t data)
 {
-//    unsigned long flags;
+    //    unsigned long flags;
     int ret;
 
     mutex_lock(&i2c_dev->lock);
@@ -238,7 +240,7 @@ static int i2c_master_write_byte(int channel, uint8_t dev_addr, uint8_t reg_addr
         dev_warn(i2c_dev->device, "Timeout waiting for STOP\n");
     }
 
-    //每次写完一次后，读第一次就报错了，可能没有清SI信号，加上，试下看是否解决。
+    // 每次写完一次后，读第一次就报错了，可能没有清SI信号，加上，试下看是否解决。
     i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
 
     ret = 0;
@@ -251,7 +253,7 @@ out:
 // I2C读一个字节
 static int i2c_master_read_byte(int channel, uint8_t dev_addr, uint8_t reg_addr, uint8_t *data)
 {
-    //unsigned long flags;
+    // unsigned long flags;
     int ret;
 
     mutex_lock(&i2c_dev->lock);
@@ -272,17 +274,19 @@ static int i2c_master_read_byte(int channel, uint8_t dev_addr, uint8_t reg_addr,
     ret = i2c_wait_si(channel, "Clear START & SI");
     if (ret < 0)
         goto out;
-    
-    if (i2c_get_status(channel) != I2C_STATUS_SLA_W_ACK) {
-        dev_err(i2c_dev->device, "Register address not acknowledged (0x%02X)\n",i2c_get_status(channel));       return -1;
+
+    if (i2c_get_status(channel) != I2C_STATUS_SLA_W_ACK)
+    {
+        dev_err(i2c_dev->device, "Register address not acknowledged (0x%02X)\n", i2c_get_status(channel));
+        return -1;
         ret = -EIO;
         printk("i2c I2C_STATUS_SLA_W_ACK error\n");
         goto out;
     }
-    
+
     // 发送寄存器地址
     i2c_set_data(channel, reg_addr);
-    
+
     ret = i2c_wait_si(channel, "write register address");
     if (ret < 0)
         goto out;
@@ -327,7 +331,7 @@ static int i2c_master_read_byte(int channel, uint8_t dev_addr, uint8_t reg_addr,
     }
 
     // 准备接收数据，发送NACK
-    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_AA);// 使能ACK
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_AA); // 使能ACK
     i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
     ret = i2c_wait_si(channel, "Read data");
     if (ret < 0)
@@ -392,7 +396,7 @@ out:
 static int i2c_master_read_two_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr,
                                      uint8_t *data1, uint8_t *data2)
 {
-    //unsigned long flags;
+    // unsigned long flags;
     int ret;
 
     mutex_lock(&i2c_dev->lock);
@@ -416,7 +420,7 @@ static int i2c_master_read_two_bytes(int channel, uint8_t dev_addr, uint8_t reg_
         ret = -EIO;
         goto out;
     }
-    
+
     // 发送寄存器地址
     i2c_set_data(channel, reg_addr);
     i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
@@ -468,7 +472,7 @@ static int i2c_master_read_two_bytes(int channel, uint8_t dev_addr, uint8_t reg_
     }
 
     // 准备接收数据，发送NACK
-    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_AA);// 使能ACK
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_AA); // 使能ACK
     i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
     ret = i2c_wait_si(channel, "Read data");
     if (ret < 0)
@@ -529,6 +533,164 @@ out:
     return ret;
 }
 
+// I2C读取任意长度字节
+static int i2c_master_read_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr,
+                                 uint8_t *data_buf, uint32_t len)
+{
+    int ret;
+    uint32_t i;
+
+    // 参数合法性检查
+    if (!data_buf || len == 0)
+        return -EINVAL;
+
+    mutex_lock(&i2c_dev->lock);
+
+    // 第一步：写寄存器地址
+    // 发送START条件
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_STA);
+    ret = i2c_wait_si(channel, "Read start condition");
+    if (ret < 0)
+        goto out;
+
+    // 发送设备地址(写模式)
+    i2c_set_data(channel, dev_addr << 1);
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~(I2C_CTRL_STA | I2C_CTRL_SI));
+    ret = i2c_wait_si(channel, "Send device address (write mode)");
+    if (ret < 0)
+        goto out;
+
+    if (i2c_get_status(channel) != I2C_STATUS_SLA_W_ACK)
+    {
+        printk("[ERROR] [SLA+W STATUS] STATUS=0x%02X\n", i2c_get_status(channel));
+        ret = -EIO;
+        goto out;
+    }
+
+    // 发送寄存器地址
+    i2c_set_data(channel, reg_addr);
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+    ret = i2c_wait_si(channel, "Write register address");
+    if (ret < 0)
+        goto out;
+
+    if (i2c_get_status(channel) != I2C_STATUS_DATA_TRANSMITTED_ACK)
+    {
+        dev_err(i2c_dev->device, "Register address not acknowledged (0x%02X)\n",
+                i2c_get_status(channel));
+        ret = -EIO;
+        printk("i2c set reg error\n");
+        goto out;
+    }
+
+    // 第二步：读数据
+    // 发送重复START
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_STA);
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+
+    ret = i2c_wait_si(channel, "Repeated start");
+    if (ret < 0)
+        goto out;
+
+    if (i2c_get_status(channel) != I2C_STATUS_REPEATED_START_TRANSMITTED)
+    {
+        dev_err(i2c_dev->device, "Repeated start failed (0x%02X)\n",
+                i2c_get_status(channel));
+        ret = -EIO;
+        printk("i2c set restart error\n");
+        goto out;
+    }
+
+    // 发送设备地址(读模式)
+    i2c_set_data(channel, (dev_addr << 1) | 1);
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~(I2C_CTRL_STA | I2C_CTRL_SI));
+    ret = i2c_wait_si(channel, "Write device address (read mode)");
+    if (ret < 0)
+        goto out;
+
+    if (i2c_get_status(channel) != I2C_STATUS_SLA_R_ACK)
+    {
+        dev_err(i2c_dev->device, "SLA+R not acknowledged (0x%02X)\n",
+                i2c_get_status(channel));
+        ret = -EIO;
+        printk("i2c set addr error\n");
+        goto out;
+    }
+
+    // 循环读取数据
+    for (i = 0; i < len; i++)
+    {
+        // 最后一个字节发送NACK，其他字节发送ACK
+        if (i == len - 1)
+        {
+            // 禁用ACK，准备接收最后一个字节
+            i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~(I2C_CTRL_AA | I2C_CTRL_SI));
+        }
+        else
+        {
+            // 启用ACK，准备接收下一个字节
+            i2c_set_ctrl(channel, (i2c_get_ctrl(channel) | I2C_CTRL_AA) & ~I2C_CTRL_SI);
+        }
+
+        ret = i2c_wait_si(channel, "Read data byte");
+        if (ret < 0)
+            goto out;
+
+        // 检查状态
+        if (i == len - 1)
+        {
+            if (i2c_get_status(channel) != I2C_STATUS_DATA_RECEIVED_NACK)
+            {
+                printk("[ERROR] [DATA %d NACK STATUS] STATUS=0x%02X\n",
+                       i, i2c_get_status(channel));
+                ret = -EIO;
+                goto out;
+            }
+        }
+        else
+        {
+            if (i2c_get_status(channel) != I2C_STATUS_DATA_RECEIVED_ACK)
+            {
+                printk("[ERROR] [DATA %d ACK STATUS] STATUS=0x%02X\n",
+                       i, i2c_get_status(channel));
+                ret = -EIO;
+                goto out;
+            }
+        }
+
+        // 读取数据
+        data_buf[i] = i2c_get_data(channel);
+    }
+
+    // 发送STOP条件
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_STO);
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+    ret = i2c_wait_si(channel, "Send stop condition");
+    if (ret < 0)
+        goto out;
+
+    // 等待STOP完成
+    ret = 1000;
+    while (--ret > 0)
+    {
+        if (i2c_get_status(channel) == I2C_STATUS_STOP_TRANSMITTED)
+            break;
+        usleep_range(10, 20);
+    }
+
+    if (ret <= 0)
+    {
+        dev_warn(i2c_dev->device, "Timeout waiting I2C_STATUS_STOP_TRANSMITTED for STOP\n");
+    }
+
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+    ret = 0; // 成功
+
+out:
+    mutex_unlock(&i2c_dev->lock);
+    return ret;
+}
+
 // 文件操作函数
 static int i2c_open(struct inode *inode, struct file *file)
 {
@@ -580,11 +742,65 @@ static long i2c_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
             return -EFAULT;
 
         ret = i2c_master_read_byte(i2c_dev->current_channel,
-                                   data.dev_addr, data.reg_addr, &data.data);
+                                   data.dev_addr, data.reg_addr, data.data);
         if (ret == 0 && copy_to_user((struct i2c_data __user *)arg, &data, sizeof(data)))
             ret = -EFAULT;
         break;
+    case I2C_READ_BYTES:
+    {
+        struct i2c_data user_data;
+        uint8_t *kernel_buf = NULL;
+        int ret = 0;
 
+        // 1. 从用户空间获取基本参数（设备地址、寄存器地址、长度）
+        if (copy_from_user(&user_data, (struct i2c_data __user *)arg, sizeof(user_data)))
+        {
+            ret = -EFAULT;
+            break;
+        }
+
+        // 2. 检查参数合法性
+        if (user_data.len == 0 || !user_data.data)
+        {
+            ret = -EINVAL; // 长度为0或缓冲区为空指针
+            break;
+        }
+        // 可选：限制最大长度，防止内存滥用
+        if (user_data.len > 1024)
+        { // 例如最大1024字节
+            ret = -E2BIG;
+            break;
+        }
+
+        // 3. 内核中分配临时缓冲区（避免直接操作用户空间指针）
+        kernel_buf = kmalloc(user_data.len, GFP_KERNEL);
+        if (!kernel_buf)
+        {
+            ret = -ENOMEM;
+            break;
+        }
+
+        // 4. 调用读取函数读取任意字节
+        ret = i2c_master_read_bytes(
+            i2c_dev->current_channel,
+            user_data.dev_addr,
+            user_data.reg_addr,
+            kernel_buf,
+            user_data.len);
+
+        // 5. 读取成功后，将数据复制回用户空间缓冲区
+        if (ret == 0)
+        {
+            if (copy_to_user(user_data.data, kernel_buf, user_data.len))
+            {
+                ret = -EFAULT; // 用户空间缓冲区不可写
+            }
+        }
+
+        // 6. 释放内核缓冲区
+        kfree(kernel_buf);
+        break;
+    }
     case I2C_READ_TWO_BYTES:
         if (copy_from_user(&two_bytes, (struct i2c_two_bytes __user *)arg, sizeof(two_bytes)))
             return -EFAULT;
