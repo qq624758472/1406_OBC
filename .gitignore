@@ -15,3 +15,4 @@ drv/i2c_drv1/my_i2c_drv.mod
 drv/i2c_drv1/my_i2c_drv.mod.c
 drv/i2c_drv1/my_i2c_drv.mod.o
 drv/i2c_drv1/my_i2c_drv.o
+drv/i2c_drv2/.i2c_adp_drv.ko.cmd

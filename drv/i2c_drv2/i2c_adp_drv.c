@@ -11,6 +11,8 @@
 // // 替换为实际PCIe设备的Vendor ID和Device ID
 // #define PCI_VENDOR_ID_CUSTOM 0x1234
 // #define PCI_DEVICE_ID_CUSTOM_I2C 0x5678
+#define PCI_VENDOR_ID_CUSTOM 0x11aa
+#define PCI_DEVICE_ID_CUSTOM_I2C 0x11aa
 
 // 假设PCIe设备的BAR0对应I2C控制器寄存器（根据硬件实际情况调整）
 #define I2C_PCIE_BAR 1
@@ -130,15 +132,6 @@ static int i2c_transfer_msg(struct i2c_pcie_dev *dev, struct i2c_msg *msg)
     ret = i2c_wait_si(dev, "Start condition");
     if (ret < 0)
         return ret;
-
-    status = i2c_get_status(dev);
-    if (status != I2C_STATUS_START_TRANSMITTED &&
-        status != I2C_STATUS_REPEATED_START_TRANSMITTED)
-    {
-        dev_err(&dev->pci_dev->dev,
-                "Invalid start status: 0x%02x\n", status);
-        return -EIO;
-    }
 
     // 发送设备地址（读/写模式）
     if (msg->flags & I2C_M_RD)
@@ -354,8 +347,7 @@ static void i2c_pcie_remove(struct pci_dev *pdev)
 
     dev_info(&pdev->dev, "PCIe I2C controller removed\n");
 }
-#define PCI_VENDOR_ID_CUSTOM 0x11aa
-#define PCI_DEVICE_ID_CUSTOM_I2C 0x11aa
+
 // PCIe设备ID表（用于匹配设备）
 static const struct pci_device_id i2c_pcie_ids[] = {
     {PCI_DEVICE(PCI_VENDOR_ID_CUSTOM, PCI_DEVICE_ID_CUSTOM_I2C)},

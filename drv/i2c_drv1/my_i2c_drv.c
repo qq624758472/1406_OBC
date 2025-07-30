@@ -695,7 +695,6 @@ static int i2c_master_read_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr
         goto out;
     }
 
-    // 第二步：读数据
     // 发送重复START
     i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_STA);
     i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);

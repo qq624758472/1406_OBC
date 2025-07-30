@@ -1,1 +1,0 @@
-cmd_/home/ucas/1406/1406_OBC/drv/i2c_drv2/i2c_adp_drv.ko := aarch64-linux-gnu-ld -r  -EL  -maarch64elf -z noexecstack   --build-id=sha1  -T scripts/module.lds -o /home/ucas/1406/1406_OBC/drv/i2c_drv2/i2c_adp_drv.ko /home/ucas/1406/1406_OBC/drv/i2c_drv2/i2c_adp_drv.o /home/ucas/1406/1406_OBC/drv/i2c_drv2/i2c_adp_drv.mod.o;  true
