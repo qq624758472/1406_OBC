@@ -13,6 +13,8 @@
 #define CLASS_NAME "i2c_controller_class"
 #define I2C_NUM_CHANNELS 5
 
+static void i2c_init_controller(int channel);
+
 // I2C基地址定义
 #define BASE_ADDR_I2C(n) (0x72100000 + ((n) * 0x10000)) // 0~4对应I2C1~I2C5
 
@@ -127,6 +129,7 @@ static int i2c_wait_si(int channel, const char *step)
         if (--timeout <= 0)
         {
             dev_err(i2c_dev->device, "%s: Timeout waiting for SI\n", step);
+            // i2c_init_controller(channel);
             return -ETIMEDOUT;
         }
         usleep_range(10, 20);
@@ -137,13 +140,31 @@ static int i2c_wait_si(int channel, const char *step)
 // I2C初始化函数
 static void i2c_init_controller(int channel)
 {
+    //printk("----i2c------init----------\n");
     //    unsigned long flags;
+    int timeout;
     mutex_lock(&i2c_dev->lock);
 
     // 重置控制寄存器
     i2c_set_ctrl(channel, 0x00);
     // 使能I2C控制器
     i2c_set_ctrl(channel, I2C_CTRL_ENS1 | I2C_CTRL_CR2 | I2C_CTRL_CR1 | I2C_CTRL_CR0);
+    
+    // 发送STOP条件
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_STO);
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+    
+    // 等待STOP完成
+    timeout = 1000;
+    while (--timeout > 0) {
+        if (i2c_get_status(channel) == I2C_STATUS_STOP_TRANSMITTED) {
+            break;
+        }
+        usleep_range(10, 20);
+    }
+    
+    // 清除SI信号
+    i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
 
     mutex_unlock(&i2c_dev->lock);
 }
@@ -260,8 +281,11 @@ static int i2c_master_write_bytes(int channel, uint8_t dev_addr, uint8_t reg_add
     uint32_t i;
 
     // 参数合法性检查
-    if (!data_buf || len == 0)
+    if (!data_buf) // || len == 0  允许0字节的写
+    {
+        // i2c_init_controller(channel);
         return -EINVAL;
+    }
 
     mutex_lock(&i2c_dev->lock);
 
@@ -281,6 +305,7 @@ static int i2c_master_write_bytes(int channel, uint8_t dev_addr, uint8_t reg_add
     if (i2c_get_status(channel) != I2C_STATUS_SLA_W_ACK)
     {
         printk("[ERROR] [SLA+W STATUS] STATUS=0x%02X\n", i2c_get_status(channel));
+        // i2c_init_controller(channel);
         ret = -EIO;
         goto out;
     }
@@ -296,6 +321,7 @@ static int i2c_master_write_bytes(int channel, uint8_t dev_addr, uint8_t reg_add
     {
         dev_err(i2c_dev->device, "Register address not acknowledged (0x%02X)\n",
                 i2c_get_status(channel));
+        // i2c_init_controller(channel);
         ret = -EIO;
         printk("i2c set reg error\n");
         goto out;
@@ -319,12 +345,13 @@ static int i2c_master_write_bytes(int channel, uint8_t dev_addr, uint8_t reg_add
         {
             dev_err(i2c_dev->device, "Data byte %d not acknowledged (0x%02X)\n",
                     i, i2c_get_status(channel));
+            // i2c_init_controller(channel);
             ret = -EIO;
             printk("i2c send data %d error\n", i);
             goto out;
         }
     }
-    printk("send %d bytes data success\n", len);
+    // printk("send %d bytes data success\n", len);
 
     // 第五步：发送STOP条件
     i2c_set_ctrl(channel, i2c_get_ctrl(channel) | I2C_CTRL_STO);
@@ -674,7 +701,8 @@ static int i2c_master_read_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr
 
     if (i2c_get_status(channel) != I2C_STATUS_SLA_W_ACK)
     {
-        printk("[ERROR] [SLA+W STATUS] STATUS=0x%02X\n", i2c_get_status(channel));
+        printk("[ERROR] [SLA+R STATUS] STATUS=0x%02X\n", i2c_get_status(channel));
+        // i2c_init_controller(channel);
         ret = -EIO;
         goto out;
     }
@@ -688,8 +716,8 @@ static int i2c_master_read_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr
 
     if (i2c_get_status(channel) != I2C_STATUS_DATA_TRANSMITTED_ACK)
     {
-        dev_err(i2c_dev->device, "Register address not acknowledged (0x%02X)\n",
-                i2c_get_status(channel));
+        dev_err(i2c_dev->device, "Register address not acknowledged (0x%02X)\n", i2c_get_status(channel));
+        // i2c_init_controller(channel);
         ret = -EIO;
         printk("i2c set reg error\n");
         goto out;
@@ -705,8 +733,8 @@ static int i2c_master_read_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr
 
     if (i2c_get_status(channel) != I2C_STATUS_REPEATED_START_TRANSMITTED)
     {
-        dev_err(i2c_dev->device, "Repeated start failed (0x%02X)\n",
-                i2c_get_status(channel));
+        dev_err(i2c_dev->device, "Repeated start failed (0x%02X)\n", i2c_get_status(channel));
+        // i2c_init_controller(channel);
         ret = -EIO;
         printk("i2c set restart error\n");
         goto out;
@@ -721,8 +749,8 @@ static int i2c_master_read_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr
 
     if (i2c_get_status(channel) != I2C_STATUS_SLA_R_ACK)
     {
-        dev_err(i2c_dev->device, "SLA+R not acknowledged (0x%02X)\n",
-                i2c_get_status(channel));
+        dev_err(i2c_dev->device, "SLA+R not acknowledged (0x%02X)\n", i2c_get_status(channel));
+        // i2c_init_controller(channel);
         ret = -EIO;
         printk("i2c set addr error\n");
         goto out;
@@ -752,8 +780,8 @@ static int i2c_master_read_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr
         {
             if (i2c_get_status(channel) != I2C_STATUS_DATA_RECEIVED_NACK)
             {
-                printk("[ERROR] [DATA %d NACK STATUS] STATUS=0x%02X\n",
-                       i, i2c_get_status(channel));
+                printk("[ERROR] [DATA %d NACK STATUS] STATUS=0x%02X\n", i, i2c_get_status(channel));
+                // i2c_init_controller(channel);
                 ret = -EIO;
                 goto out;
             }
@@ -762,8 +790,8 @@ static int i2c_master_read_bytes(int channel, uint8_t dev_addr, uint8_t reg_addr
         {
             if (i2c_get_status(channel) != I2C_STATUS_DATA_RECEIVED_ACK)
             {
-                printk("[ERROR] [DATA %d ACK STATUS] STATUS=0x%02X\n",
-                       i, i2c_get_status(channel));
+                printk("[ERROR] [DATA %d ACK STATUS] STATUS=0x%02X\n", i, i2c_get_status(channel));
+                // i2c_init_controller(channel);
                 ret = -EIO;
                 goto out;
             }
@@ -812,6 +840,14 @@ static int i2c_open(struct inode *inode, struct file *file)
 
 static int i2c_release(struct inode *inode, struct file *file)
 {
+    int i = 0;
+    mutex_lock(&i2c_dev->lock);
+    for (i = 0; i < I2C_NUM_CHANNELS; i++)
+    {
+        // 重置控制寄存器
+        i2c_set_ctrl(i, 0x00);
+    }
+    mutex_unlock(&i2c_dev->lock);
     return 0;
 }
 
@@ -821,7 +857,8 @@ static long i2c_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
     int channel;
     // struct i2c_data data;
     // struct i2c_two_bytes two_bytes;
-
+    i2c_init_controller(i2c_dev->current_channel);
+    //printk("----i2c------init----------\n");
     // 检查命令合法性
     if (_IOC_TYPE(cmd) != I2C_IOCTL_MAGIC)
         return -ENOTTY;
@@ -965,16 +1002,16 @@ static long i2c_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         kfree(kernel_buf);
         break;
     }
-    // case I2C_READ_TWO_BYTES:
-    //     if (copy_from_user(&two_bytes, (struct i2c_two_bytes __user *)arg, sizeof(two_bytes)))
-    //         return -EFAULT;
+        // case I2C_READ_TWO_BYTES:
+        //     if (copy_from_user(&two_bytes, (struct i2c_two_bytes __user *)arg, sizeof(two_bytes)))
+        //         return -EFAULT;
 
-    //     ret = i2c_master_read_two_bytes(i2c_dev->current_channel,
-    //                                     two_bytes.dev_addr, two_bytes.reg_addr,
-    //                                     &two_bytes.data1, &two_bytes.data2);
-    //     if (ret == 0 && copy_to_user((struct i2c_two_bytes __user *)arg, &two_bytes, sizeof(two_bytes)))
-    //         ret = -EFAULT;
-    //     break;
+        //     ret = i2c_master_read_two_bytes(i2c_dev->current_channel,
+        //                                     two_bytes.dev_addr, two_bytes.reg_addr,
+        //                                     &two_bytes.data1, &two_bytes.data2);
+        //     if (ret == 0 && copy_to_user((struct i2c_two_bytes __user *)arg, &two_bytes, sizeof(two_bytes)))
+        //         ret = -EFAULT;
+        //     break;
 
     default:
         ret = -ENOTTY;
