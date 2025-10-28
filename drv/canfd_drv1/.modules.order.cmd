@@ -1,0 +1,1 @@
+cmd_/home/ucas/1406/1406_OBC/drv/canfd_drv1/modules.order := {   echo /home/ucas/1406/1406_OBC/drv/canfd_drv1/canfd_drv.ko; :; } | awk '!x[$$0]++' - > /home/ucas/1406/1406_OBC/drv/canfd_drv1/modules.order

@@ -11,8 +11,6 @@
 // // 替换为实际PCIe设备的Vendor ID和Device ID
 // #define PCI_VENDOR_ID_CUSTOM 0x1234
 // #define PCI_DEVICE_ID_CUSTOM_I2C 0x5678
-#define PCI_VENDOR_ID_CUSTOM 0x11aa
-#define PCI_DEVICE_ID_CUSTOM_I2C 0x11aa
 
 // 假设PCIe设备的BAR0对应I2C控制器寄存器（根据硬件实际情况调整）
 #define I2C_PCIE_BAR 1
@@ -134,14 +132,7 @@ static int i2c_transfer_msg(struct i2c_pcie_dev *dev, struct i2c_msg *msg)
         return ret;
 
     // 发送设备地址（读/写模式）
-    if (msg->flags & I2C_M_RD)
-    {
-        i2c_set_data(dev, (msg->addr << 1) | 0x01); // 读模式
-    }
-    else
-    {
-        i2c_set_data(dev, (msg->addr << 1) & 0xFE); // 写模式
-    }
+    i2c_set_data(dev, (msg->addr << 1) & 0xFE); // 写模式
 
     // 清除START和SI位
     i2c_set_ctrl(dev, i2c_get_ctrl(dev) & ~(I2C_CTRL_STA | I2C_CTRL_SI));
@@ -164,10 +155,18 @@ static int i2c_transfer_msg(struct i2c_pcie_dev *dev, struct i2c_msg *msg)
                 "SLA+W not acknowledged: 0x%02x\n", status);
         return -EIO;
     }
-
+    // // 第三步：发送寄存器地址
+    // i2c_set_data(dev, reg_addr);
+    // i2c_set_ctrl(channel, i2c_get_ctrl(channel) & ~I2C_CTRL_SI);
+    // ret = i2c_wait_si(channel, "Write register address");
+    // if (ret < 0)
+    //     goto out;
     // 处理数据传输
+    printk("数据长度包含地址 len=%d\n", msg->len);
     if (msg->flags & I2C_M_RD)
     {
+        // 发送寄存器地址
+
         // 读数据
         for (i = 0; i < msg->len; i++)
         {
@@ -203,6 +202,8 @@ static int i2c_transfer_msg(struct i2c_pcie_dev *dev, struct i2c_msg *msg)
         for (i = 0; i < msg->len; i++)
         {
             i2c_set_data(dev, msg->buf[i]);
+            if (i == 0)
+                printk("first is addr =0x%02x\n", msg->buf[i]);
             i2c_set_ctrl(dev, i2c_get_ctrl(dev) & ~I2C_CTRL_SI);
 
             ret = i2c_wait_si(dev, "Write data");
@@ -222,10 +223,29 @@ static int i2c_transfer_msg(struct i2c_pcie_dev *dev, struct i2c_msg *msg)
     // 发送STOP条件
     i2c_set_ctrl(dev, i2c_get_ctrl(dev) | I2C_CTRL_STO);
     i2c_set_ctrl(dev, i2c_get_ctrl(dev) & ~I2C_CTRL_SI);
-    usleep_range(100, 200);
+    ret = i2c_wait_si(dev, "STOP ACK");
+    if (ret < 0)
+        return ret;
+    // 等待STOP完成
+    ret = 1000;
+    while (--ret > 0)
+    {
+        if (i2c_get_status(dev) == I2C_STATUS_STOP_TRANSMITTED)
+            break;
+        usleep_range(10, 20);
+    }
+
+    if (ret <= 0)
+    {
+        dev_warn(i2c_dev->device, "Timeout waiting for STOP\n");
+    }
+
+    // 清除SI信号，为下一次操作做准备
+    i2c_set_ctrl(dev, i2c_get_ctrl(dev) & ~I2C_CTRL_SI);
 
     return 0;
 }
+
 
 // I2C传输函数（标准接口）
 static int i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
@@ -347,7 +367,8 @@ static void i2c_pcie_remove(struct pci_dev *pdev)
 
     dev_info(&pdev->dev, "PCIe I2C controller removed\n");
 }
-
+#define PCI_VENDOR_ID_CUSTOM 0x11aa
+#define PCI_DEVICE_ID_CUSTOM_I2C 0x11aa
 // PCIe设备ID表（用于匹配设备）
 static const struct pci_device_id i2c_pcie_ids[] = {
     {PCI_DEVICE(PCI_VENDOR_ID_CUSTOM, PCI_DEVICE_ID_CUSTOM_I2C)},

@@ -1,0 +1,1 @@
+cmd_/home/ucas/1406/1406_OBC/drv/int_pcie_drv/modules.order := {   echo /home/ucas/1406/1406_OBC/drv/int_pcie_drv/pcie_int.ko; :; } | awk '!x[$$0]++' - > /home/ucas/1406/1406_OBC/drv/int_pcie_drv/modules.order

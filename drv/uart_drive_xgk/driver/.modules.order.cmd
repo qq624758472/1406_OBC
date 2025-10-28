@@ -1,0 +1,1 @@
+cmd_/home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/modules.order := {   echo /home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/actel_uart.ko; :; } | awk '!x[$$0]++' - > /home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/modules.order

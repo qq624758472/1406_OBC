@@ -33,7 +33,7 @@ unsigned int intPpsCnt = 0;
 pthread_t g_rtc_read_thrd_id = 0;
 pthread_t g_rtc_read_thrd_id1 = 0;
 
-void rtc_irq_proc(int signum)
+void rtc_irq_proc2(int signum)
 {
     unsigned int tmp = 0;
     // 时间片中断
@@ -98,103 +98,70 @@ void *rtc_local_sec_print(void *arg)
     }
 }
 
-void *rtc_irq_read_thrd(void *arg)
+void rtc_irq_proc()
 {
     int ret = 0;
     char value_read[3];
     char len;
-    pthread_detach(pthread_self());
-    while (1)
-    {
-        ret = read(rtc_irq_fd, value_read, len);
-        rtc_irq_proc(0);
-        usleep(10000);
-    }
-    return NULL;
-}
-// 比较寄存器中断
-void *rtc_irq_read_thrd1(void *arg)
-{
-    // rtc_irq_proc1();
-    rtc_irq_proc(0);
+    int hdl = -1;
+    struct timeval tv;
+    struct tm *tm_info;
+    char buffer[26];
+    gettimeofday(&tv, NULL); //  获取当前时间
+    // 将 timeval 结构中的时间转为 tm 结构
+    tm_info = localtime(&tv.tv_sec);
+
+    // 格式化时间
+    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+    // 打印当前时间和微秒部分
+    LOG("Current time: %s.%06ld\n", buffer, tv.tv_usec);
 }
 
 void pps_open()
 {
-
     //	unsigned int *rtcAddr, data;
     int Oflags;
     int rtcEnHdl = -1;
     char path[64];
     int ret = -1;
 
-    // RTC模块交互区映射
-    pg_PPSReg = (pps_t *)devm_map(PPS_MEM_BASE1, PPS_MEM_LEN, &g_rtcHdl);
-    if (pg_PPSReg == NULL)
+    // memset(path, 0, sizeof(path));
+    // snprintf(path, sizeof(path), "/sys/class/gpio/gpio%d", PL_GPO_RTC);
+    // if (-1 == access(path, F_OK))
+    // {
+    //     gpio_export(PL_GPO_RTC);
+    //     gpio_direction(PL_GPO_RTC, GPIO_DIR_OUT);
+    // }
+#if 0
+    int err = pthread_create(&g_rtc_read_thrd_id, NULL, rtc_irq_read_thrd, NULL);
+    if (err != 0)
     {
-        LOG("rtc mmap fail!\n");
+        LOG("Create can_sample_thrd fail: %s\n", strerror(err));
         return;
     }
-    memset(pg_PPSReg, 0, sizeof(pps_t));
-    LOG("%s:%d pg_PPSReg=%p\n", __FUNCTION__, __LINE__, pg_PPSReg);
-    // 尝试对该内存进行加锁
 
     rtc_irq_fd = open("/dev/rtc1_irq", O_RDWR);
     if (rtc_irq_fd < 0)
     {
-        LOG("/dev/rtc_irq_gkhy can't open!\n");
+        LOG("/dev/rtc1_irq can't open!\n");
     }
-
-    signal(SIGIO, rtc_irq_read_thrd1);
+#else
+    signal(SIGIO, rtc_irq_proc);
+    rtc_irq_fd = open("/dev/rtc1_irq", O_RDWR);
+    if (rtc_irq_fd < 0)
+    {
+        printf("/dev/rtc1_irq can't open!\n");
+    }
     // 设置进程为RTC中断设备的拥有者
     fcntl(rtc_irq_fd, F_SETOWN, getpid());
     // 获取当前文件状态标志
     Oflags = fcntl(rtc_irq_fd, F_GETFL);
     // 设置文件状态标志为异步模式
     fcntl(rtc_irq_fd, F_SETFL, Oflags | FASYNC);
-    if (g_rtc_read_thrd_id == 0)
-    {
-        // int err = pthread_create(&g_rtc_read_thrd_id, NULL, rtc_irq_read_thrd, NULL);
-        int err = pthread_create(&g_rtc_read_thrd_id, NULL, rtc_irq_read_thrd, NULL);
-        if (err != 0)
-        {
-            LOG("Create can_sample_thrd fail: %s\n", strerror(err));
-            return;
-        }
-        LOG("can_sample_thrd(g_thrd_id=0x%08x) create success!\n", (unsigned int)g_rtc_read_thrd_id);
-    }
-
-#if 0
-    rtc_irq_fd1 = open("/dev/rtc2_irq", O_RDWR);
-    if (rtc_irq_fd1 < 0)
-    {
-        LOG("/dev/rtc2_irq can't open!\n");
-    }
-
-    signal(SIGIO, rtc_irq_read_thrd1);
-    // 设置进程为RTC中断设备的拥有者
-    // fcntl(rtc_irq_fd, F_SETOWN, getpid());
-    fcntl(rtc_irq_fd1, F_SETOWN, getpid());
-    // 获取当前文件状态标志
-    Oflags = fcntl(rtc_irq_fd1, F_GETFL);
-    // 设置文件状态标志为异步模式
-    fcntl(rtc_irq_fd1, F_SETFL, Oflags | FASYNC);
-
-    // if (g_rtc_read_thrd_id1 == 0)
-    // {
-    //     int err = pthread_create(&g_rtc_read_thrd_id1, NULL, rtc_irq_read_thrd1, NULL);
-    //     if (err != 0)
-    //     {
-    //         LOG("Create g_rtc_read_thrd_id1 fail: %s\n", strerror(err));
-    //         return;
-    //     }
-    //     LOG("g_rtc_read_thrd_id1 (g_thrd_id=0x%08x) create success!\n", (unsigned int)g_rtc_read_thrd_id1);
-    // }
 #endif
-
-    // 设置 RTC 文件描述符为异步模式，支持 SIGIO 信号
-    // fcntl(rtc_irq_fd, F_SETFL, O_ASYNC);
 }
+
+
 
 void pps_close()
 {

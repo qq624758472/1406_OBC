@@ -185,7 +185,7 @@ typedef struct
 } pps_t;
 #pragma (0)
 
-void rtc_irq_proc(int signum);
+void rtc_irq_proc();
 void *rtc_irq_read_thrd(void *arg);
 void pps_open();
 void pps_close();

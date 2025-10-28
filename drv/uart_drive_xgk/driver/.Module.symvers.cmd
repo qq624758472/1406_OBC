@@ -1,0 +1,1 @@
+cmd_/home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/Module.symvers := sed 's/\.ko$$/\.o/' /home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/modules.order | scripts/mod/modpost    -o /home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/Module.symvers -e -i Module.symvers   -T -

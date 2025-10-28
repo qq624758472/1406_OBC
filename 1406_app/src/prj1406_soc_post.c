@@ -795,7 +795,8 @@ void rs422_send(unsigned char id)
     int wr_static;
     int fd;
     char buffer[10] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99};
-    char *uart1 = "/dev/ttyS";
+    // char *uart1 = "/dev/ttyLP";
+    char *uart1 = "/dev/ttyGH";
     char uartx[32];
 
     memset(uartx, 0, sizeof(uartx));
@@ -1094,7 +1095,7 @@ void rs422_savefile(unsigned char id, int maxPkt)
     int pktcnt = 0;
     int saveByte, totalByte = 0;
     char readbuf[256];
-    char *uart1 = "/dev/ttyS";
+    char *uart1 = "/dev/ttyLP";
     char savfName[32];
     char uartx[32];
 

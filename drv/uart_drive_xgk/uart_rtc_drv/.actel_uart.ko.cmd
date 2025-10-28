@@ -1,0 +1,1 @@
+cmd_/home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/actel_uart.ko := aarch64-linux-gnu-ld -r  -EL  -maarch64elf -z noexecstack   --build-id=sha1  -T scripts/module.lds -o /home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/actel_uart.ko /home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/actel_uart.o /home/ucas/1406/1406_OBC/drv/uart_drive_xgk/driver/actel_uart.mod.o;  true

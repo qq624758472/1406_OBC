@@ -1,0 +1,1 @@
+cmd_/home/ucas/1406/1406_OBC/drv/int_pcie_drv/Module.symvers := sed 's/\.ko$$/\.o/' /home/ucas/1406/1406_OBC/drv/int_pcie_drv/modules.order | scripts/mod/modpost    -o /home/ucas/1406/1406_OBC/drv/int_pcie_drv/Module.symvers -e -i Module.symvers   -T -

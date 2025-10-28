@@ -1,0 +1,1 @@
+cmd_/home/ucas/1406/1406_OBC/drv/int_pcie_drv/pcie_int.ko := aarch64-linux-gnu-ld -r  -EL  -maarch64elf -z noexecstack   --build-id=sha1  -T scripts/module.lds -o /home/ucas/1406/1406_OBC/drv/int_pcie_drv/pcie_int.ko /home/ucas/1406/1406_OBC/drv/int_pcie_drv/pcie_int.o /home/ucas/1406/1406_OBC/drv/int_pcie_drv/pcie_int.mod.o;  true

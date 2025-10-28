@@ -7,11 +7,10 @@
 #include <string.h>
 #include <getopt.h>
 
-//i2c 读2个字节数据
-// ./i2cControl -c 1 -a 0x50 -r 0x00 -m -n 2
-// i2c 写3个字节数据，分别是0x11,0x22,0x33
-// ./i2cControl -c 1 -a 0x50 -r 0x00 -W -n 3 -d 0x11,0x22,0x33
-
+// i2c 读2个字节数据
+//  ./i2cControl -c 1 -a 0x50 -r 0x00 -m -n 2
+//  i2c 写3个字节数据，分别是0x11,0x22,0x33
+//  ./i2cControl -c 1 -a 0x50 -r 0x00 -W -n 3 -d 0x11,0x22,0x33
 
 // 与驱动中定义一致的数据结构
 struct i2c_data
@@ -181,9 +180,9 @@ int main(int argc, char *argv[])
             break;
         case 'n':
             num_bytes = atoi(optarg);
-            if (num_bytes <= 0 || num_bytes > MAX_BYTES)
+            if (num_bytes < 0 || num_bytes > MAX_BYTES)
             {
-                fprintf(stderr, "字节数必须在1-%d之间\n", MAX_BYTES);
+                fprintf(stderr, "字节数必须在0-%d之间\n", MAX_BYTES);
                 return -1;
             }
             break;
@@ -214,7 +213,7 @@ int main(int argc, char *argv[])
     }
 
     // 检查多字节操作的参数
-    if ((read_multi || write_multi) && num_bytes == 0)
+    if ((read_multi || write_multi) && num_bytes < 0) //
     {
         fprintf(stderr, "多字节操作必须指定字节数(-n)\n");
         return -1;
@@ -223,6 +222,8 @@ int main(int argc, char *argv[])
     // 为多字节操作分配缓冲区
     if (read_multi || write_multi)
     {
+        if (num_bytes <= 0)
+            num_bytes++;
         data_buf = malloc(num_bytes);
         if (!data_buf)
         {
@@ -238,7 +239,8 @@ int main(int argc, char *argv[])
         if (!data_str)
         {
             fprintf(stderr, "写入多字节数据必须指定数据(-d)\n");
-            free(data_buf);
+            if (num_bytes)
+                free(data_buf);
             return -1;
         }
 
@@ -246,14 +248,16 @@ int main(int argc, char *argv[])
         if (parse_multi_hex(data_str, data_buf, num_bytes, &actual_len) != 0)
         {
             fprintf(stderr, "无效的多字节数据格式: %s\n", data_str);
-            free(data_buf);
+            if (num_bytes)
+                free(data_buf);
             return -1;
         }
 
         if (actual_len != num_bytes)
         {
             fprintf(stderr, "数据个数不匹配，预期%d个，实际%d个\n", num_bytes, actual_len);
-            free(data_buf);
+            if (num_bytes)
+                free(data_buf);
             return -1;
         }
     }
@@ -262,7 +266,8 @@ int main(int argc, char *argv[])
     if (channel < 1 || channel > 5)
     {
         fprintf(stderr, "I2C通道必须在1-5之间\n");
-        free(data_buf);
+        if (num_bytes)
+            free(data_buf);
         return -1;
     }
 
@@ -272,7 +277,8 @@ int main(int argc, char *argv[])
     {
         perror("无法打开I2C设备");
         fprintf(stderr, "请确保驱动已加载且设备节点存在: %s\n", I2C_DEVICE);
-        free(data_buf);
+        if (num_bytes)
+            free(data_buf);
         return -1;
     }
 
@@ -281,7 +287,8 @@ int main(int argc, char *argv[])
     {
         perror("设置I2C通道失败");
         close(fd);
-        free(data_buf);
+        if (num_bytes)
+            free(data_buf);
         return -1;
     }
 
@@ -300,7 +307,8 @@ int main(int argc, char *argv[])
         {
             perror("I2C写操作失败");
             close(fd);
-            free(data_buf);
+            if (num_bytes)
+                free(data_buf);
             return -1;
         }
 
@@ -315,12 +323,14 @@ int main(int argc, char *argv[])
             .len = num_bytes,
             .data = data_buf};
 
-        printf("写入%d字节: 通道=%d, 从设备地址=0x%02X, 寄存器=0x%02X\n",
-               num_bytes, channel, dev_addr, reg_addr);
+        printf("写入%d字节: 通道=%d, 从设备地址=0x%02X, 寄存器=0x%02X\n", num_bytes, channel, dev_addr, reg_addr);
         printf("写入数据: ");
-        for (uint32_t i = 0; i < num_bytes; i++)
+        if (num_bytes > 0)
         {
-            printf("0x%02X ", data_buf[i]);
+            for (uint32_t i = 0; i < num_bytes; i++)
+            {
+                printf("0x%02X ", data_buf[i]);
+            }
         }
         printf("\n");
 
@@ -334,7 +344,7 @@ int main(int argc, char *argv[])
 
         printf("多字节写操作成功\n");
     }
-    //单个字节读已经废弃
+    // 单个字节读已经废弃
 #if 0
     // 执行读1字节操作
     else if (read1)
